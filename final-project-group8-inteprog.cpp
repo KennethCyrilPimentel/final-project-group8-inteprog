@@ -1,3 +1,12 @@
+/*
+Group 8 - Final Project
+Kenneth Cyril P. Pimentel
+Alexie Chyle Ortega Magbuhat
+Yvan Charles T. Magtibay 
+Dave Anthony Sales
+*/
+
+
 #include <iostream>
 #include <vector>
 #include <string>
