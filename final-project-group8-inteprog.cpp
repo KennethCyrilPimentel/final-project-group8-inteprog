@@ -3,14 +3,16 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <algorithm> // For std::transform, std::find, std::remove_if, std::find_if
-#include <limits>    // For std::numeric_limits
+#include <algorithm> // For transform, find, remove_if, find_if
+#include <limits>    // For numeric_limits
 #include <map>       // For inventory allocation in events
-#include <locale>    // For std::locale
-#include <iomanip>   // For std::setw, std::left, std::right
+#include <locale>    // For locale
+#include <iomanip>   // For setw, left, right
+
 
 // Add this line to use the std namespace
 using namespace std;
+
 
 // Forward declarations
 class User;
@@ -21,18 +23,20 @@ class Attendee;
 class InventoryItem;
 class System; // System is now a singleton
 
+
 // --- Enums ---
 enum class Role { ADMIN, REGULAR_USER, NONE };
 enum class EventStatus { UPCOMING, ONGOING, COMPLETED, CANCELED };
 
-// --- Helper Functions ---
 
+// --- Helper Functions ---
 // Function to convert string to lowercase
 string toLower(string s) {
     transform(s.begin(), s.end(), s.begin(),
                      [](unsigned char c){ return tolower(c); });
     return s;
 }
+
 
 // Function to get validated string input (ensures not empty)
 string getStringInput(const string& prompt) {
@@ -48,6 +52,7 @@ string getStringInput(const string& prompt) {
         cout << "Input cannot be empty. Please try again.\n";
     }
 }
+
 
 // Function to get validated integer input
 int getIntInput(const string& prompt) {
@@ -65,6 +70,7 @@ int getIntInput(const string& prompt) {
     }
 }
 
+
 // Function to get validated positive integer input
 int getPositiveIntInput(const string& prompt) {
     int input;
@@ -77,11 +83,12 @@ int getPositiveIntInput(const string& prompt) {
     }
 }
 
+
 // Basic date validation (format-MM-DD)
 bool isValidDate(const string& date) {
     if (date.length() != 10) return false;
     if (date[4] != '-' || date[7] != '-') return false;
-    try {
+    try { //Eception handling for stoi
         int year = stoi(date.substr(0, 4));
         int month = stoi(date.substr(5, 2));
         int day = stoi(date.substr(8, 2));
@@ -94,6 +101,7 @@ bool isValidDate(const string& date) {
     }
     return true;
 }
+
 
 // Basic time validation (format HH:MM - 24-hour)
 bool isValidTime(const string& time) {
@@ -112,8 +120,7 @@ bool isValidTime(const string& time) {
 
 
 // --- Class Definitions ---
-
-// ** User Class (Abstract Base Class) **
+// ** User Class (Abstract Base Class) ** Encapsulation
 class User {
 protected:
     string username;
@@ -134,6 +141,7 @@ public:
 
     void setPassword(const string& newPassword);
 
+    //Abstraction - Virtual Void
     virtual void displayMenu(System& sys) = 0; // Pure virtual
     virtual void displayDetails() const = 0; // Pure virtual for displaying user-specific details
     virtual string toString() const;
@@ -143,7 +151,8 @@ public:
 int User::nextUserId = 1;
 
 
-// ** Admin Class **
+
+// ** Admin Class ** Inheritance from User
 class Admin : public User {
 public:
     Admin(string uname, string pwd);
@@ -158,7 +167,8 @@ private:
     void adminDataExportMenu(System& sys);
 };
 
-// ** RegularUser Class **
+
+// ** RegularUser Class ** Inheritance from User
 class RegularUser : public User {
 public:
     RegularUser(string uname, string pwd);
@@ -166,6 +176,7 @@ public:
     void displayMenu(System& sys) override;
     void displayDetails() const override; // Implementation for RegularUser
 };
+
 
 
 // ** Attendee Class **
@@ -187,6 +198,8 @@ public:
     static void initNextId(int id) { if (id >= nextAttendeeId) nextAttendeeId = id + 1;}
 };
 int Attendee::nextAttendeeId = 1;
+
+
 
 // ** InventoryItem Class **
 class InventoryItem {
@@ -210,6 +223,8 @@ public:
     static void initNextId(int id) { if (id >= nextItemId) nextItemId = id + 1;}
 };
 int InventoryItem::nextItemId = 1;
+
+
 
 // ** Event Class **
 class Event {
@@ -244,6 +259,7 @@ public:
 int Event::nextEventId = 1;
 
 
+
 // --- Strategy Pattern: Exporting Data ---
 // Abstract base class for export strategies
 class IExportStrategy {
@@ -254,6 +270,8 @@ public:
     virtual void exportAttendees(const vector<Attendee>& attendees, const string& filename) const = 0;
     virtual void exportInventory(const vector<InventoryItem>& inventory, const string& filename) const = 0;
 };
+
+
 
 // Concrete strategy for text file export
 class TextExportStrategy : public IExportStrategy {
@@ -314,6 +332,7 @@ public:
 };
 
 
+
 // ** System Class (Singleton) **
 class System {
 private:
@@ -348,7 +367,7 @@ public:
     ~System();
 
     // Data members
-    vector<User*> users;
+    vector<User*> users; //Polymorphism
     vector<Event> events;
     vector<InventoryItem> inventory;
     vector<Attendee> allAttendees;
@@ -428,8 +447,11 @@ public:
     void seedInitialData(); // Made public as it's called from main
 };
 
+
+
 // Initialize the static instance pointer outside the class definition
 System* System::instance = nullptr;
+
 
 
 // --- User Class Method Definitions ---
@@ -445,6 +467,8 @@ User::User(int id, string uname, string pwd, Role r)
 }
 User::~User() {}
 
+
+
 void User::setPassword(const string& newPassword) {
     if (newPassword.length() < 6) {
         cout << "Password must be at least 6 characters long.\n";
@@ -455,11 +479,15 @@ void User::setPassword(const string& newPassword) {
     // System::getInstance().saveUsers(); // Should save users when password changes
 }
 
+
+
 string User::toString() const {
     stringstream ss;
     ss << userId << "," << username << "," << password << "," << static_cast<int>(role);
     return ss.str();
 }
+
+
 
 // --- Admin Class Method Definitions ---
 Admin::Admin(string uname, string pwd) : User(std::move(uname), std::move(pwd), Role::ADMIN) {}
@@ -1148,7 +1176,7 @@ void System::saveAttendees() {
 }
 
 bool System::usernameExists(const string& uname) const {
-    for (const auto* user : users) if (user && user->getUsername() == uname) return true;
+    for (const auto* user : users) if (user && user->getUsername() == uname) return true; //Polymorphism
     return false;
 }
 void System::createUserAccount(const string& uname, const string& pwd, Role role) {

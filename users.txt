@@ -1,0 +1,4 @@
+1,admin,adminpass,0
+2,user1,user1pass,1
+3,user2,user2pass,1
+5,tester,tester123,1
