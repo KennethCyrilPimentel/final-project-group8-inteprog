@@ -56,17 +56,29 @@ string getStringInput(const string& prompt) {
 
 // Function to get validated integer input
 int getIntInput(const string& prompt) {
-    int input;
+    string input;
     while (true) {
         cout << prompt;
-        cin >> input;
-        if (cin.good()) {
-            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear buffer
-            return input;
+        getline(cin, input);
+        
+        // Check if all characters are digits or a single '-' for negative numbers
+        bool isValid = !input.empty();
+        for (char c : input) {
+            if (!isdigit(c) && !(c == '-' && &c == &input[0])) {
+                isValid = false;
+                break;
+            }
         }
-        cout << "Invalid input. Please enter an integer.\n";
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        
+        if (isValid) {
+            try {
+                return stoi(input);
+            } catch (...) {
+                cout << "Input out of range. Please enter a valid integer.\n";
+            }
+        } else {
+            cout << "Invalid input. Please enter an integer (numeric characters only).\n";
+        }
     }
 }
 
@@ -103,15 +115,19 @@ bool isValidDate(const string& date) {
 }
 
 
-// Basic time validation (format HH:MM - 24-hour)
+// Update the time validation to allow military time (00:00 to 24:59)
 bool isValidTime(const string& time) {
     if (time.length() != 5) return false;
     if (time[2] != ':') return false;
-      try {
+    try {
         int hour = stoi(time.substr(0, 2));
         int minute = stoi(time.substr(3, 2));
-        if (hour < 0 || hour > 23) return false;
+        
+        // Allow 00:00 to 24:59
+        if (hour < 0 || hour > 24) return false;
         if (minute < 0 || minute > 59) return false;
+        // Special case: 24:00 is valid, but 24:01-24:59 are not
+        if (hour == 24 && minute != 0) return false;
     } catch (const exception&) {
         return false;
     }
@@ -1188,18 +1204,42 @@ void System::createUserAccount(const string& uname, const string& pwd, Role role
     cout << (role == Role::ADMIN ? "Admin" : "User") << " '" << uname << "' created (ID: " << users.back()->getUserId() << ").\n";
     saveUsers();
 }
+// Update the username validation in publicRegisterNewUser
 void System::publicRegisterNewUser() {
     cout << "\n--- Register New User ---\n";
-    string uname = getStringInput("Username: ");
-    string pwd = getStringInput("Password (min 6 chars): ");
+    string uname;
+    while (true) {
+        uname = getStringInput("Username: ");
+        if (usernameExists(uname)) {
+            cout << "Username unavailable. Please choose another.\n";
+        } else {
+            break;
+        }
+    }
+    
+    string pwd;
+    while (true) {
+        pwd = getStringInput("Password (min 6 chars): ");
+        if (pwd.length() < 6) {
+            cout << "Password must be at least 6 characters long.\n";
+        } else {
+            break;
+        }
+    }
+    
     cout << "Account type: 1. Admin 2. Regular User\n";
     int rChoice = getIntInput("Choice (1-2): ");
     Role newRole;
     if (rChoice == 1) newRole = Role::ADMIN;
     else if (rChoice == 2) newRole = Role::REGULAR_USER;
-    else newRole = Role::NONE; // Mark as invalid if choice is bad
+    else {
+        cout << "Invalid choice. Defaulting to Regular User.\n";
+        newRole = Role::REGULAR_USER;
+    }
+    
     createUserAccount(uname, pwd, newRole);
 }
+
 void System::deleteUserAccount(const string& uname) {
     // Cannot delete currently logged in user
     if (currentUser && currentUser->getUsername() == uname) {
@@ -1248,7 +1288,11 @@ void System::createEvent() {
     cout << "\n--- Create Event ---\n";
     string name = getStringInput("Name: "); string date, time;
     while(true){ date = getStringInput("Date (YYYY-MM-DD): "); if(isValidDate(date)) break; cout << "Invalid date format. Please try again.\n"; }
-    while(true){ time = getStringInput("Time (HH:MM): "); if(isValidTime(time)) break; cout << "Invalid time format. Please try again.\n"; }
+    while(true){ 
+        time = getStringInput("Time (HH:MM, 24-hour format, 00:00 to 24:00): "); 
+        if(isValidTime(time)) break; 
+        cout << "Invalid time format. Please use 24-hour format (00:00 to 24:00).\n"; 
+    }
     string loc = getStringInput("Location: "); string desc = getStringInput("Description: "); string cat = getStringInput("Category: ");
     events.emplace_back(name, date, time, loc, desc, cat);
     cout << "Event '" << name << "' created (ID: " << events.back().eventId << ").\n"; saveEvents();
