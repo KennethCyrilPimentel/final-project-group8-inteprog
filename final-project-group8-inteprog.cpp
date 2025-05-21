@@ -552,7 +552,47 @@ void Admin::adminUserManagementMenu(System& sys) {
         choice = getIntInput("Enter your choice: ");
 
         switch (choice) {
-            case 1: sys.publicRegisterNewUser(); break;
+            case 1: {
+                cout << "\n--- Create New User ---\n";
+                
+                // Username validation
+                string uname;
+                while (true) {
+                    uname = getStringInput("Username: ");
+                    if (sys.usernameExists(uname)) {
+                        cout << "Username unavailable. Please choose another.\n";
+                        continue;
+                    }
+                    break;
+                }
+
+                // Password validation
+                string pwd;
+                while (true) {
+                    pwd = getStringInput("Password (min 6 chars): ");
+                    if (pwd.length() < 6) {
+                        cout << "Password must be at least 6 characters long.\n";
+                        continue;
+                    }
+                    break;
+                }
+
+                // Role selection
+                int rChoice;
+                while (true) {
+                    cout << "Account type: 1. Admin 2. Regular User\n";
+                    rChoice = getIntInput("Choice (1-2): ");
+                    if (rChoice != 1 && rChoice != 2) {
+                        cout << "Invalid choice. Please enter 1 or 2.\n";
+                        continue;
+                    }
+                    break;
+                }
+
+                Role role = (rChoice == 1) ? Role::ADMIN : Role::REGULAR_USER;
+                sys.createUserAccount(uname, pwd, role);
+                break;
+            }
             case 2: {
                 string uname = getStringInput("Enter username to delete: ");
                 sys.deleteUserAccount(uname);
@@ -1196,47 +1236,60 @@ bool System::usernameExists(const string& uname) const {
     return false;
 }
 void System::createUserAccount(const string& uname, const string& pwd, Role role) {
-    if (usernameExists(uname)) { cout << "Username already exists.\n"; return;}
-    if (pwd.length() < 6) { cout << "Password too short.\n"; return; }
-    if (role == Role::ADMIN) users.push_back(new Admin(uname, pwd));
-    else if (role == Role::REGULAR_USER) users.push_back(new RegularUser(uname, pwd));
-    else { cout << "Invalid role. Account not created.\n"; return; }
-    cout << (role == Role::ADMIN ? "Admin" : "User") << " '" << uname << "' created (ID: " << users.back()->getUserId() << ").\n";
+    User* newUser = nullptr;
+    if (role == Role::ADMIN) {
+        newUser = new Admin(uname, pwd);
+    } else {
+        newUser = new RegularUser(uname, pwd);
+    }
+    
+    users.push_back(newUser);
+    cout << (role == Role::ADMIN ? "Admin" : "User") << " account '" << uname << "' created (ID: " << newUser->getUserId() << ").\n";
     saveUsers();
 }
 // Update the username validation in publicRegisterNewUser
 void System::publicRegisterNewUser() {
     cout << "\n--- Register New User ---\n";
+    
+    // Username validation (immediate feedback)
     string uname;
     while (true) {
         uname = getStringInput("Username: ");
         if (usernameExists(uname)) {
             cout << "Username unavailable. Please choose another.\n";
-        } else {
-            break;
+            continue;
         }
+        if (uname.empty()) {
+            cout << "Username cannot be empty.\n";
+            continue;
+        }
+        break;
     }
-    
+
+    // Password validation (immediate feedback)
     string pwd;
     while (true) {
         pwd = getStringInput("Password (min 6 chars): ");
         if (pwd.length() < 6) {
             cout << "Password must be at least 6 characters long.\n";
-        } else {
-            break;
+            continue;
         }
+        break;
     }
-    
-    cout << "Account type: 1. Admin 2. Regular User\n";
-    int rChoice = getIntInput("Choice (1-2): ");
-    Role newRole;
-    if (rChoice == 1) newRole = Role::ADMIN;
-    else if (rChoice == 2) newRole = Role::REGULAR_USER;
-    else {
-        cout << "Invalid choice. Defaulting to Regular User.\n";
-        newRole = Role::REGULAR_USER;
+
+    // Role selection with validation
+    int rChoice;
+    while (true) {
+        cout << "Account type: 1. Admin 2. Regular User\n";
+        rChoice = getIntInput("Choice (1-2): ");
+        if (rChoice != 1 && rChoice != 2) {
+            cout << "Invalid choice. Please enter 1 or 2.\n";
+            continue;
+        }
+        break;
     }
-    
+
+    Role newRole = (rChoice == 1) ? Role::ADMIN : Role::REGULAR_USER;
     createUserAccount(uname, pwd, newRole);
 }
 
